@@ -50,10 +50,14 @@ class User(UserMixin, db.Model):
         try:
             data = s.loads(token)
         except:
+            print(1)
             return False
         if data.get('confirm') != self.id:
+            print(2)
             return False
-        self.confirm = True
+        # 在认证用户版本中,confirmed写错成confirm
+        self.confirmed = True
+        print(3)
         db.session.add(self)
         return True
 
