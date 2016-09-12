@@ -4,12 +4,19 @@ from flask.ext.bootstrap import Bootstrap
 from flask.ext.moment import Moment
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.mail import Mail
+from flask.ext.login import LoginManager
 from config import config
 
 bootstrap = Bootstrap()
 moment = Moment()
 db = SQLAlchemy()
 mail = Mail()
+login_manager = LoginManager()
+# 提供不同的安全等级防止会话被篡改，
+# 等级有'None','basic','strong'
+login_manager.session_protection = 'strong'
+# 登陆页面的视图函数位置
+login_manager.login_view = 'auth.login'
 
 
 def create_app(config_name):
@@ -21,9 +28,13 @@ def create_app(config_name):
     moment.init_app(app)
     db.init_app(app)
     mail.init_app(app)
+    login_manager.init_app(app)
 
     # 路由和错误信息定义的视图函数
     from .main import main as main_blueprint
-    app.register_blueprint(main_blueprint, url_prefix='/main')
+    app.register_blueprint(main_blueprint)
+
+    from .auth import auth as auth_blueprint
+    app.register_blueprint(auth_blueprint, prefix='/auth')
 
     return app

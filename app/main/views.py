@@ -36,6 +36,5 @@ def index():
 
 @main.route('/user/<name>')
 def user(name):
-    abort(404)
     return render_template('user.html', name=name,
                            current_time=datetime.utcnow())
