@@ -53,7 +53,41 @@ class User(UserMixin, db.Model):
             return False
         if data.get('confirm') != self.id:
             return False
-        self.confirm = True
+        # 在认证用户版本中,confirmed写错成confirm
+        self.confirmed = True
+        db.session.add(self)
+        return True
+
+    def reset_password(self, token, newpassword):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except:
+            return False
+        if data.get('confirm') != self.id:
+            return False
+        self.password = newpassword
+        db.session.add(self)
+        return True
+
+    def generate_change_email_token(self, newemail, expiration=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
+        return s.dumps({'email': self.email, 'new email': newemail})
+
+    def confirm_change_email_token(self, token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except:
+            return False
+        if self.email != data.get('email'):
+            return False
+        if data.get('new email') is None:
+            return False
+        newemail = data.get('new email')
+        if User.query.filter_by(email=newemail).first():
+            return False
+        self.email = newemail
         db.session.add(self)
         return True
 

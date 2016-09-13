@@ -11,6 +11,10 @@
     New User?
     <a href="{{url_for('auth.register')}}">
     Click here to register.
+    </a><br>
+    Forget Passwords?
+    <a href="{{url_for('auth.send_resetmail')}}">
+    Click here to reset.
     </a>
 </div>
 {% endblock %}
