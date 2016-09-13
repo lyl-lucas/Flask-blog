@@ -46,3 +46,29 @@ class ModifyPasswordForm(Form):
     def validate_oldpassword(self, field):
         if not current_user.verify_password(field.data):
             raise ValidationError('Incorrect Passwords')
+
+
+class ResetPasswordForm1(Form):
+    email = StringField('Email', validators=[Required(),
+                                             Length(1, 64), Email()])
+    submit = SubmitField('Send Confirmation Email')
+
+    def validate_email(self, field):
+        if not User.query.filter_by(email=field.data).first():
+            raise ValidationError("Unknown email address")
+
+
+class ResetPasswordForm2(Form):
+    email = StringField('Email', validators=[Required(), Length(1, 64),
+                                             Email()])
+    newpassword = PasswordField('New Password', validators=[
+        Required(), EqualTo('newpassword2', message='Passwords must match.')])
+    newpassword2 = PasswordField('Confirm Password', validators=[Required()])
+    submit = SubmitField('Submit')
+
+    def validate_email(self, field):
+        if not User.query.filter_by(email=field.data).first():
+            raise ValidationError("Unknown email address")
+
+
+

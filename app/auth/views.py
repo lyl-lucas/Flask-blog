@@ -1,12 +1,14 @@
 from . import auth
-from flask import render_template, redirect, request, url_for, flash
-from .forms import LoginForm, RegistrationForm, ModifyPasswordForm
+from flask import render_template, redirect,\
+    request, url_for, flash, current_app
+from .forms import LoginForm, RegistrationForm,\
+    ModifyPasswordForm, ResetPasswordForm1, ResetPasswordForm2
 from ..models import User
 from flask.ext.login import login_user, logout_user,\
     login_required, current_user
 from .. import db
 from ..email import send_email
-
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
@@ -85,11 +87,11 @@ def resend_confirmation():
                'Confirm Your Account',
                'auth/mail/confirm',
                token=token, user=current_user)
-    flash( 'A confirmation email has been sent to you by email.')
+    flash('A confirmation email has been sent to you by email.')
     return redirect(url_for('main.index'))
 
 
-@auth.route('/modifypassword', methods=['GET','POST'])
+@auth.route('/modifypassword', methods=['GET', 'POST'])
 @login_required
 def modifypassword():
     form = ModifyPasswordForm()
@@ -98,3 +100,39 @@ def modifypassword():
         flash('Passwords have been modified.')
         return redirect(url_for('main.index'))
     return render_template('auth/modifypassword.html', form=form)
+
+
+@auth.route('/resetpassword', methods=['GET', 'POST'])
+def send_resetmail():
+    if not current_user.is_anonymous:
+        return redirect(url_for('main.index'))
+    form = ResetPasswordForm1()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        token = user.generate_confirmation_token()
+        send_email(user.email,
+                   'Reset Your Passwords',
+                   'auth/mail/resetpassword',
+                   token=token, user=user)
+        flash('A confirmation email has been sent to you by email.' + url_for('auth.resetpassword',token=token,_external=True))
+        return redirect(url_for('main.index'))
+    return render_template('auth/resetpassword1.html', form=form)
+
+
+@auth.route('/resetpassword/<token>', methods=['GET', 'POST'])
+def resetpassword(token):
+    if not current_user.is_anonymous:
+        return redirect(url_for('main.index'))
+    form = ResetPasswordForm2()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user.reset_password(token, form.newpassword.data):
+            flash('Your password has been reset.')
+            return redirect(url_for('auth.login'))
+        else:
+            flash('This confirm link for reset is invalid or has expired.')
+            return redirect(url_for('main.index'))
+    return render_template('auth/resetpassword2.html', form=form)
+
+
+
