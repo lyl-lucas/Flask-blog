@@ -1,14 +1,14 @@
 from . import auth
 from flask import render_template, redirect,\
-    request, url_for, flash, current_app
+    request, url_for, flash
 from .forms import LoginForm, RegistrationForm,\
-    ModifyPasswordForm, ResetPasswordForm1, ResetPasswordForm2
+    ModifyPasswordForm, ResetPasswordForm1, ResetPasswordForm2, ChangeEmailForm
 from ..models import User
 from flask.ext.login import login_user, logout_user,\
     login_required, current_user
 from .. import db
 from ..email import send_email
-from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
@@ -135,4 +135,26 @@ def resetpassword(token):
     return render_template('auth/resetpassword2.html', form=form)
 
 
+@auth.route('/changeemail', methods=['GET', 'POST'])
+@login_required
+def send_changeemail():
+    form = ChangeEmailForm()
+    if form.validate_on_submit():
+        token = current_user.generate_change_email_token(form.email.data)
+        send_email(form.email.data,
+                   'Change Email Link',
+                   'auth/mail/changeemailconfirm',
+                   token=token)
+        flash('A confirmation email has been sent to you by email.' + url_for('auth.changeemail',token=token,_external=True))
+    return render_template('auth/changeemail.html', form=form)
+
+
+@auth.route('/changeemail/<token>')
+@login_required
+def changeemail(token):
+    if current_user.confirm_change_email_token(token):
+        flash('Email has been updated.')
+    else:
+        flash('Invalid request.')
+    return redirect(url_for('main.index'))
 
