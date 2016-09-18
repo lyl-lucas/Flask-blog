@@ -24,6 +24,7 @@ class Role(db.Model):
     name = db.Column(db.String(64), unique=True)
     default = db.Column(db.Boolean, default=False, index=True)
     permission = db.Column(db.Integer)
+    # 一对多
     users = db.relationship('User', backref='role', lazy='dynamic')
 
     # 方便Role对象输入到数据库中
@@ -69,6 +70,8 @@ class User(UserMixin, db.Model):
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)  # 最后访问日期
 
     avatar_hash = db.Column(db.String(32))
+    # 一对多
+    posts = db.relationship('Post', backref='author', lazy='dynamic')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -171,6 +174,16 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return '<User %r>' % self.username
+
+
+# 博客文章的模型
+class Post(db.Model):
+    __tablename__ = 'posts'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    # 和users表存在一对多关系
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
 
 @login_manager.user_loader
