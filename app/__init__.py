@@ -6,11 +6,13 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.mail import Mail
 from flask.ext.login import LoginManager
 from config import config
+from flask.ext.pagedown import PageDown
 
 bootstrap = Bootstrap()
 moment = Moment()
 db = SQLAlchemy()
 mail = Mail()
+pagedown = PageDown()
 login_manager = LoginManager()
 # 提供不同的安全等级防止会话被篡改，
 # 等级有'None','basic','strong'
@@ -29,6 +31,7 @@ def create_app(config_name):
     db.init_app(app)
     mail.init_app(app)
     login_manager.init_app(app)
+    pagedown.init_app(app)
 
     # 路由和错误信息定义的视图函数
     from .main import main as main_blueprint
