@@ -1,5 +1,5 @@
-from flask import render_template, \
-    redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash,\
+    current_app
 from . import main
 from .forms import PostForm, EditProfileForm, EditProfileAdminForm
 from ..models import User, Role, Post, Permission
@@ -19,8 +19,13 @@ def index():
 
         db.session.add(post)
         return redirect(url_for('.index'))
-    posts = Post.query.order_by(Post.timestamp.desc()).all()
-    return render_template('index.html', form=form, posts=posts)
+    page = request.args.get('page', 1, type=int)  # 从URL中获得page若不存在则设置为1
+    pagination = Post.query.order_by(Post.timestamp.desc()).paginate(
+        page, per_page=current_app.config['FLASK_POSTS_PER_PAGE'],
+        error_out=False)
+    posts = pagination.items
+    return render_template(
+        'index.html', form=form, posts=posts, pagination=pagination)
 
 
 @main.route('/user/<username>')

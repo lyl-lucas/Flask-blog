@@ -53,3 +53,4 @@ class PostForm(Form):
     body = TextAreaField("what's on your mind?", validators=[Required()])
     submit = SubmitField('Post')
 
+
