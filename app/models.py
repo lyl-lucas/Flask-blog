@@ -124,6 +124,8 @@ class User(UserMixin, db.Model):
         if self.email and self.avatar_hash is None:
             self.avatar_hash = hashlib.md5(
                 self.email.encode('utf-8')).hexdigest()
+        # 使用户自己关注自己,则在显示关注的用户的文章的同时也会显示自己的文章
+        self.follow(self)
 
     # 通过property来对password进行一些预处理以保存哈希值
     @property
@@ -259,6 +261,15 @@ class User(UserMixin, db.Model):
     def is_followed_by(self, user):
         return self.followers.filter_by(
             follower_id=user.id).first() is not None
+
+    # 让用户自己关注自己,使自己成为自己的followed,这样有利于posts的显示
+    @staticmethod
+    def add_self_follows():
+        for user in User.query.all():
+            if not user.is_following(user):
+                user.follow(user)
+                db.session.add(user)
+                db.session.commit()
 
     def __repr__(self):
         return '<User %r>' % self.username
