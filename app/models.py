@@ -12,6 +12,35 @@ from markdown import markdown
 import bleach
 
 
+class Follow(db.Model):
+    __tablename__ = 'follows'
+    follower_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                            primary_key=True)
+    followed_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                            primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @staticmethod
+    def generate_fake(count=100):
+        from random import seed, randint
+        import forgery_py
+        from sqlalchemy.exc import IntegrityError
+
+        seed()
+        user_count = User.query.count()
+        for i in range(count):
+            follower = User.query.offset(randint(0, user_count - 1)).first()
+            followed = User.query.offset(randint(0, user_count - 1)).first()
+            f = Follow(follower=follower,
+                       followed=followed,
+                       timestamp=forgery_py.date.date(True))
+            db.session.add(f)
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+
+
 class Permission:
         FOLLOW = 0x01  # 关注用户
         COMMENT = 0x02  # 评论
@@ -74,6 +103,15 @@ class User(UserMixin, db.Model):
     avatar_hash = db.Column(db.String(32))
     # 一对多
     posts = db.relationship('Post', backref='author', lazy='dynamic')
+    # 自引用多对多关系
+    followers = db.relationship('Follow', foreign_keys=[Follow.followed_id],
+                                backref=db.backref('followed', lazy='joined'),
+                                lazy='dynamic',
+                                cascade='all, delete-orphan')
+    followed = db.relationship('Follow', foreign_keys=[Follow.follower_id],
+                               backref=db.backref('follower', lazy='joined'),
+                               lazy='dynamic',
+                               cascade='all, delete-orphan')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -86,6 +124,8 @@ class User(UserMixin, db.Model):
         if self.email and self.avatar_hash is None:
             self.avatar_hash = hashlib.md5(
                 self.email.encode('utf-8')).hexdigest()
+        # 使用户自己关注自己,则在显示关注的用户的文章的同时也会显示自己的文章
+        self.follow(self)
 
     # 通过property来对password进行一些预处理以保存哈希值
     @property
@@ -95,6 +135,11 @@ class User(UserMixin, db.Model):
     @password.setter
     def password(self, password):
         self.password_hash = generate_password_hash(password)
+
+    @property
+    def followed_posts(self):
+        return Post.query.join(Follow, Follow.followed_id == Post.author_id)\
+            .filter(Follow.follower_id == self.id)
 
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
@@ -196,6 +241,35 @@ class User(UserMixin, db.Model):
                 db.session.commit()
             except IntegrityError:
                 db.session.rollback()
+
+    # 关注关系常用函数
+    def follow(self, user):
+        if not self.is_following(user):
+            # 关注方式就是在关联表中加入表示关系的行
+            f = Follow(follower=self, followed=user)
+            db.session.add(f)
+
+    def unfollow(self, user):
+        f = self.followed.filter_by(followed_id=user.id).first()
+        if f:
+            db.session.delete(f)
+
+    def is_following(self, user):
+        return self.followed.filter_by(
+            followed_id=user.id).first() is not None
+
+    def is_followed_by(self, user):
+        return self.followers.filter_by(
+            follower_id=user.id).first() is not None
+
+    # 让用户自己关注自己,使自己成为自己的followed,这样有利于posts的显示
+    @staticmethod
+    def add_self_follows():
+        for user in User.query.all():
+            if not user.is_following(user):
+                user.follow(user)
+                db.session.add(user)
+                db.session.commit()
 
     def __repr__(self):
         return '<User %r>' % self.username
