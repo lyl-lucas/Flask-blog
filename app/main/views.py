@@ -1,8 +1,8 @@
 from flask import render_template, request, redirect, url_for, flash,\
     current_app, abort, make_response
 from . import main
-from .forms import PostForm, EditProfileForm, EditProfileAdminForm
-from ..models import User, Role, Post, Permission, Follow
+from .forms import PostForm, EditProfileForm, EditProfileAdminForm, CommentForm
+from ..models import User, Role, Post, Permission, Follow, Comment
 from .. import db
 from flask.ext.login import login_required, current_user
 from ..decorator import admin_required, permission_required
@@ -91,9 +91,31 @@ def edit_profile_admin(id):
     return render_template('edit_profile.html', form=form)
 
 
-@main.route('/post/<int:id>')
+@main.route('/post/<int:id>', methods=['GET', 'POST'])
 def post(id):
     post = Post.query.get_or_404(id)
+    form = CommentForm()
+    if form.validate_on_submit():
+        comment = Comment(body=form.body.data,
+                          post_id=id,
+                          author=current_user._get_current_object())
+        db.session.add(comment)
+        flash('Your comment has been published.')
+        # page=-1是为了将最新的评论显示
+        return redirect(url_for('.post', id=post.id, page=-1))
+    page = request.args.get('page', 1, type=int)
+    if page == -1:
+        page = (post.comments.count() - 1) // \
+            current_app.config['FLASK_COMMENTS_PER_PAGE'] + 1
+    pagination = post.comments.order_by(
+        Comment.timestamp.asc()).paginate(
+            page, per_page=current_app.config['FLASK_COMMENTS_PER_PAGE'],
+            error_out=False)
+    comments = pagination.items
+    print(comments)
+    return render_template('post.html', form=form, posts=[post],
+                           pagination=pagination,
+                           comments=comments)
     # 为了重复使用局部模版,所以传入一个list
     return render_template('post.html', posts=[post])
 
@@ -188,7 +210,43 @@ def show_all():
 
 
 @main.route('/followed')
+@login_required
 def show_followed():
     resp = make_response(redirect(url_for('.index')))
     resp.set_cookie('show_followed', '1', max_age=30 * 24 * 60 * 60)
     return resp
+
+
+@main.route('/moderate')
+@login_required
+@permission_required(Permission.MODERATE_COMMENTS)
+def moderate():
+    page = request.args.get('page', 1, type=int)
+    pagination = Comment.query.order_by(Comment.timestamp.desc()).paginate(
+        page, per_page=current_app.config['FLASK_COMMENTS_PER_PAGE'],
+        error_out=True)
+    comments = pagination.items
+    return render_template('moderate.html',
+                           comments=comments, pagination=pagination)
+
+
+@main.route('/moderate/enable/<int:id>')
+@login_required
+@permission_required(Permission.MODERATE_COMMENTS)
+def moderate_enable(id):
+    comment = Comment.query.get_or_404(id)
+    comment.disabled = False
+    db.session.add(comment)
+    return redirect(url_for('.moderate',
+                            page=request.args.get(id)))
+
+
+@main.route('/moderate/disable/<int:id>')
+@login_required
+@permission_required(Permission.MODERATE_COMMENTS)
+def moderate_disable(id):
+    comment = Comment.query.get_or_404(id)
+    comment.disabled = True
+    db.session.add(comment)
+    return redirect(url_for('.moderate',
+                            page=request.args.get(id)))

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+{% block title %}Flask-Moderate comments{% endblock %}
+{% block scripts %}
+{{super()}}
+{{ pagedown.include_pagedown() }}
+{% endblock %}
+{% block page_content %}
+<div class="page-header">
+    <h1>Moderate Comments</h1>
+    <div>
+    {% set moderate=True %}
+        {% include "_comments.html" %}
+    </div>
+    {% if pagination %}
+        <div>
+            {{ macros.pagination_widget(pagination, ".moderate" ) }}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
