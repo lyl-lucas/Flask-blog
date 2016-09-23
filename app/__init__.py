@@ -1,5 +1,5 @@
 # coding:utf-8
-from flask import Flask, render_template
+from flask import Flask
 from flask.ext.bootstrap import Bootstrap
 from flask.ext.moment import Moment
 from flask.ext.sqlalchemy import SQLAlchemy
@@ -38,6 +38,9 @@ def create_app(config_name):
     app.register_blueprint(main_blueprint)
 
     from .auth import auth as auth_blueprint
-    app.register_blueprint(auth_blueprint, prefix='/auth')
+    app.register_blueprint(auth_blueprint, url_prefix='/auth')
+    # api 蓝图
+    from .api_1_0 import api as api_blueprint
+    app.register_blueprint(api_blueprint, url_prefix='/api/v1.0')
 
     return app
