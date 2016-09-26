@@ -147,7 +147,7 @@ def send_changeemail():
                    'Change Email Link',
                    'auth/mail/changeemailconfirm',
                    token=token)
-        flash('A confirmation email has been sent to you by email.' + url_for('auth.changeemail',token=token,_external=True))
+        flash('A confirmation email has been sent to you by email.')
     return render_template('auth/changeemail.html', form=form)
 
 
