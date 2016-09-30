@@ -128,7 +128,9 @@ class User(UserMixin, db.Model):
             self.avatar_hash = hashlib.md5(
                 self.email.encode('utf-8')).hexdigest()
         # 使用户自己关注自己,则在显示关注的用户的文章的同时也会显示自己的文章
-        self.follow(self)
+        # self.follow(self)不可用,因为self.is_following用到了,self.followed.filter_by
+        # 而此时并没有self.followed的列表为空无法执行此操作
+        self.followed.append(Follow(followed=self))
 
     # 通过property来对password进行一些预处理以保存哈希值
     @property
