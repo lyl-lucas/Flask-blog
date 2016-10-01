@@ -1,3 +1,4 @@
+# coding:utf-8
 from flask.ext.wtf import Form
 from wtforms import StringField, SubmitField, TextAreaField, SelectField,\
     BooleanField
@@ -58,5 +59,3 @@ class PostForm(Form):
 class CommentForm(Form):
     body = PageDownField("Enter your comment", validators=[Required()])
     submit = SubmitField('Submit')
-
-

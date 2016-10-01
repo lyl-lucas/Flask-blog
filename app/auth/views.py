@@ -1,3 +1,4 @@
+# coding:utf-8
 from . import auth
 from flask import render_template, redirect,\
     request, url_for, flash
