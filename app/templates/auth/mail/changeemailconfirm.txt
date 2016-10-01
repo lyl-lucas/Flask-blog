@@ -2,7 +2,7 @@ Dear {{ current_user.username }},
 
 Welcome to Flasky!
 
-To confirm your account please click on the following link:
+To confirm your new email address please click on the following link:
 
 {{ url_for('auth.changeemail', token=token, _external=True) }}
 
