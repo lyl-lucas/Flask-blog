@@ -36,6 +36,7 @@ class Follow(db.Model):
                        followed=followed,
                        timestamp=forgery_py.date.date(True))
             db.session.add(f)
+            db.session.commit()
             try:
                 db.session.commit()
             except IntegrityError:
@@ -43,11 +44,11 @@ class Follow(db.Model):
 
 
 class Permission:
-        FOLLOW = 0x01  # 关注用户
-        COMMENT = 0x02  # 评论
-        WRITE_ARTICLES = 0x04  # 写文章
-        MODERATE_COMMENTS = 0x08  # 管理修改和谐评论
-        ADMINISTER = 0x80  # 管理网站
+    FOLLOW = 0x01  # 关注用户
+    COMMENT = 0x02  # 评论
+    WRITE_ARTICLES = 0x04  # 写文章
+    MODERATE_COMMENTS = 0x08  # 管理修改和谐评论
+    ADMINISTER = 0x80  # 管理网站
 
 
 class Role(db.Model):
@@ -166,6 +167,7 @@ class User(UserMixin, db.Model):
         # 在认证用户版本中,confirmed写错成confirm
         self.confirmed = True
         db.session.add(self)
+        db.sesssion.commit()
         return True
 
     def reset_password(self, token, newpassword):
@@ -178,6 +180,7 @@ class User(UserMixin, db.Model):
             return False
         self.password = newpassword
         db.session.add(self)
+        db.session.commit()
         return True
 
     def generate_change_email_token(self, newemail, expiration=3600):
@@ -201,6 +204,7 @@ class User(UserMixin, db.Model):
         self.avatar_hash = hashlib.md5(
             self.email.encode('utf-8')).hexdigest()
         db.session.add(self)
+        db.session.commit()
         return True
 
     def can(self, permission):
@@ -213,6 +217,7 @@ class User(UserMixin, db.Model):
     def ping(self):
         self.last_seen = datetime.utcnow()
         db.session.add(self)
+        db.session.commit()
 
     def gravatar(self, size=100, default='identicon', rating='g'):
         if request.is_secure:
@@ -241,6 +246,7 @@ class User(UserMixin, db.Model):
                      about_me=forgery_py.lorem_ipsum.sentence(),
                      member_since=forgery_py.date.date(True))
             db.session.add(u)
+            db.session.commit()
             # 防止出现email重复而提交不了的情况
             try:
                 db.session.commit()
@@ -253,6 +259,7 @@ class User(UserMixin, db.Model):
             # 关注方式就是在关联表中加入表示关系的行
             f = Follow(follower=self, followed=user)
             db.session.add(f)
+            db.session.commit()
 
     def unfollow(self, user):
         f = self.followed.filter_by(followed_id=user.id).first()
@@ -412,6 +419,7 @@ def load_user(user_id):
 
 
 class AnonymousUser(AnonymousUserMixin):
+
     def can(self, permission):
         return False
 
@@ -420,3 +428,4 @@ class AnonymousUser(AnonymousUserMixin):
 
 
 login_manager.anonymous_user = AnonymousUser
+r = AnonymousUser
