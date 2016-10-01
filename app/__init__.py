@@ -22,6 +22,11 @@ login_manager.login_view = 'auth.login'
 
 
 def create_app(config_name):
+
+    if not app.debug and not app.testing and not app.config['SSL_DISABLE']:
+        from flask.ext.sslify import SSLify
+        sslify = SSLify(app)
+
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)

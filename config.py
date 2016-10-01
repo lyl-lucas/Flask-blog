@@ -15,6 +15,8 @@ class Config:
     FLASK_DB_QUERY_TIMEOUT = 0.5
     SQLALCHEMY_TRACK_MODIFICATIONS = True
 
+    SSL_DISABLE = True
+
     @staticmethod
     def init_app(app):
         pass
@@ -67,10 +69,15 @@ class ProductionConfig(Config):
 
 
 class HerokuConfig(ProductionConfig):
+    SSL_DISABLE = Bool(os.environ.get('SSL_DISABLE'))
 
     @classmethod
     def init_app(cls, app):
         ProductionConfig.init_app(app)
+
+        # 处理代理服务器首部
+        from werkzeug.contrib.fixers import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app)
 
         # 输出到stderr
         import logging
