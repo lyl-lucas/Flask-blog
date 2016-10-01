@@ -89,6 +89,7 @@ def resend_confirmation():
                'Confirm Your Account',
                'auth/mail/confirm',
                token=token, user=current_user)
+    print(token)
     flash('A confirmation email has been sent to you by email.')
     return redirect(url_for('main.index'))
 
@@ -116,7 +117,7 @@ def send_resetmail():
                    'Reset Your Passwords',
                    'auth/mail/resetpassword',
                    token=token, user=user)
-        flash('A confirmation email has been sent to you by email.' + url_for('auth.resetpassword', token=token, _external=True))
+        flash('A confirmation email has been sent to you by email.' + url_for('auth.resetpassword',token=token,_external=True))
         return redirect(url_for('main.index'))
     return render_template('auth/resetpassword1.html', form=form)
 
@@ -159,3 +160,4 @@ def changeemail(token):
     else:
         flash('Invalid request.')
     return redirect(url_for('main.index'))
+

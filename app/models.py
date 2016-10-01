@@ -167,7 +167,7 @@ class User(UserMixin, db.Model):
         # 在认证用户版本中,confirmed写错成confirm
         self.confirmed = True
         db.session.add(self)
-        db.session.commit()
+        db.sesssion.commit()
         return True
 
     def reset_password(self, token, newpassword):
