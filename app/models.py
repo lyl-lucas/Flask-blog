@@ -36,7 +36,6 @@ class Follow(db.Model):
                        followed=followed,
                        timestamp=forgery_py.date.date(True))
             db.session.add(f)
-            db.session.commit()
             try:
                 db.session.commit()
             except IntegrityError:
@@ -246,7 +245,6 @@ class User(UserMixin, db.Model):
                      about_me=forgery_py.lorem_ipsum.sentence(),
                      member_since=forgery_py.date.date(True))
             db.session.add(u)
-            db.session.commit()
             # 防止出现email重复而提交不了的情况
             try:
                 db.session.commit()
